@@ -5,6 +5,7 @@ from os.path import abspath
 from typing import List, Dict, Optional
 from collections import defaultdict
 import tempfile
+from queue import Queue
 
 from loguru import logger
 import yaml
@@ -12,6 +13,7 @@ import secrets
 from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from common.models import CopyStatus
+
 
 app = FastAPI()
 security = HTTPBasic()
@@ -81,6 +83,8 @@ def parse_good_run_list(good_run_list, groupby_idx=7):
 
 @app.on_event('startup')
 def init():
+    '''Init configuration'''
+
     logger.add("{}.log".format(os.getpid()))
     config = get_configuration()
     try:
