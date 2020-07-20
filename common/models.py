@@ -6,8 +6,3 @@ class CopyStatus(Enum):
     CheckInProgress = auto()
     IntegrityFailed = auto()
     Done = auto()
-
-
-class Payload(BaseModel):
-    run: str
-    status: Status

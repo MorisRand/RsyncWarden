@@ -141,3 +141,7 @@ __pycache__/
 
  # Cython debug symbols
  cython_debug/
+
+
+#YAML config files
+*.yaml

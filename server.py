@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 
 import os
+from os.path import abspath
 from typing import List, Dict, Optional
 from collections import defaultdict
 import tempfile
@@ -8,7 +9,7 @@ import tempfile
 from loguru import logger
 import yaml
 import secrets
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from common.models import CopyStatus
 
@@ -16,8 +17,9 @@ app = FastAPI()
 security = HTTPBasic()
 
 runs = None 
-copied_runs = dict()
-runs_in_process = dict()
+copied_runs: Dict[str, CopyStatus] = dict()
+
+runs_in_process: List[str] = []
 
 
 class Auth:
@@ -36,19 +38,9 @@ class Auth:
             )
         return credentials
 
-
-
-@app.get("/" )
-async def root(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
-    return {"message": credentials.username }
-
-@app.put("/dummy/runs/finilize")
-async def add_run_to_completed(payload: Payload, credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
-    copied_runs.update({payload.run: payload.status})
-
-@app.put("/runs/finilize")
+@app.post("/runs/finalize")
 async def add_run_to_completed(run: str, credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
-    copied_runs.update({run: Status.ShouldCheckIntegrity})
+    copied_runs.update({run: CopyStatus.Done})
 
 @app.get("/runs/completed")
 async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
@@ -111,8 +103,22 @@ def init():
         runs = parse_good_run_list(os.path.abspath(good_run_file_path), config.get('good_runs_groupby_idx'))
     logger.info('Initialized good run list')
 
+    previously_copied = abspath('copied_runs.yaml')
+    if os.path.exists(previously_copied) and config.get('check_previously_copied'):
+        logger.info(f'Found previosly copied runs on {previously_copied}')
+        with open(previously_copied) as f:
+            previously_copied_runs = yaml.load(f)
+
+        global copied_runs
+        for run, status in previously_copied_runs.items():
+            if status == CopyStatus.Done:
+                runs.pop(run)
+            copied_runs[run] = status
+
 @app.on_event('shutdown')
 def dump_copied_runs():
-    with open('copied_runs.lst', 'w') as f:
-        yaml.dump(copied_runs, f)
+    '''Save info about runs that were copied'''
+    if copied_runs:
+        with open('copied_runs.yaml', 'w') as f:
+            yaml.dump(copied_runs, f)
         
