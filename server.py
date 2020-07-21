@@ -95,9 +95,6 @@ async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_cr
 async def total_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
     return len(runs)
 
-@app.get("/files/copied/total")
-async def total_files_copied():
-
 @app.get("/runs/copied/total")
 async def total_copied_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
     return len(copied_runs)
@@ -175,4 +172,3 @@ def dump_copied_runs():
     if copied_runs:
         with open('copied_runs.yaml', 'w') as f:
             yaml.dump(copied_runs, f)
-        
