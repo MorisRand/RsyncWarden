@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 
 import os
+import sys
 from os.path import abspath
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
@@ -67,12 +68,14 @@ async def add_run_to_completed(message: ClientMessage, credentials: HTTPBasicCre
         integrity_failed_counter += 1
         if message.failed_files is not None:
             runs[failed_files_run] = message.failed_files
+            logger.warning(f'{message.run} reported files with wrong checksums! Resubmitted corrupted files')
         else:
             run = message.run
-            logger.warning(f'{run} reported files with wrong checksums but provided empty list of corrupt files! Need closer look')
+            logger.warning(f'{message.run} reported files with wrong checksums but provided empty list of corrupt files! Need closer look')
 
     copied_runs.update({message.run: Status.Done})
     runs_in_process.pop(message.run)
+    logger.success(f'Finished copying {message.run}')
     
 
 @app.get("/runs/completed")
@@ -93,7 +96,7 @@ async def send_next_run(credentials: HTTPBasicCredentials = Depends(Auth.get_cre
     run, pathes = entry
     start = datetime.now()
     runs_in_process[run] = (start, pathes)
-    return {run: pathes}
+    return {'run': run, 'files': pathes}
 
 
 def get_configuration() -> Dict[str, Optional[str]]:
