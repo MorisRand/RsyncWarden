@@ -13,6 +13,13 @@ from loguru import logger
 
 from common.models import ClientMessage, Status
 
+RSYNC_VERBOSE_COMMAND = '''rsync -h --progress -avzp --ignore-existing
+                           --files-from={filelist}  rsync://{ihep_host}:/dybfs {eos_home}'''
+RSYNC_REWRITE_COMMAND = '''rsync -h --progress -avzp 
+                            --files-from={filelist}  rsync://{ihep_host}:/dybfs {eos_home}'''
+RSYNC_SILENT_COMMAND = '''rsync -avzp 
+                            --files-from={filelist}  rsync://{ihep_host}:/dybfs {eos_home}'''
+
 def get_config():
     try:
         with open(abspath("client_config.yaml"), 'r') as f:
@@ -24,6 +31,7 @@ def get_config():
         config['passwd'] = os.environ['CLIENT_PASSWD']
         config['server_address'] = os.environ['SERVER_ADDRESS']
         config['eos_home'] = os.environ['EOS_HOME']
+        config['ihep_host'] = os.environ['IHEP_HOST']
     return config
 
 
@@ -56,18 +64,35 @@ def get_new_run(server, credentials):
 def event_loop(config):
     credentials = (config['login'], config['passwd'])
     server = config['server_address']
+    ihep_host = config['ihep_host']
+    eos_home = config['eos_home']
 
-    copying_in_progress = False
+    copying_in_progress, checking_cksums = False
     while True:
         if not copying_in_progress:
             run, pathes, cksums = get_new_run(server, credentials)
+
+        logger.info(f'Starting new copy process for {run}')
+        with NamedTemporaryFile(mode='w+t') as temp:
+            # prepare the file list for rsync process
+            for path in pathes:
+                temp.write(path+'\n')
+            # force writing to the disk
+            temp.seek(0)
+
+            filelist = temp.name
+
+            time.sleep(5)
+
+
 
 
 
 
 
 if __name__ == "__main__":
-    logger.add('client_{}.log'.format(os.getpid()), backtrace=True, diagnose=True)
+    logger.add('client_{}.log'.format(os.getpid()), backtrace=True,
+            diagnose=True, rotation='500 MB')
     config = get_config()
     event_loop(config)
     

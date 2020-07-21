@@ -125,12 +125,14 @@ def get_configuration() -> Dict[str, Optional[str]]:
     return config
 
 
-def parse_good_run_list(good_run_list, groupby_idx=7):
+def parse_good_run_list(good_run_list, groupby_idx=5):
     good_runs: Dict[str: List[Tuple[str,str]]] = defaultdict(list)
     with open(good_run_list, 'r') as f:
         run_in_process = None
         for entry in f:
             path, cksum = entry.split(' ')
+# trim '/dybfs/', necessary for rsync to read files to copy from list
+            path = '/'.join(path.split('/')[1:]) 
             tokens = path.split('/')
             current_run = tokens[groupby_idx]
             good_runs[current_run].append((path, cksum.rstrip('\n')))
