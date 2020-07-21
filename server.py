@@ -45,7 +45,7 @@ class Auth:
         return credentials
 
 def task_overdue(submit_date):
-    return (submit_date + timedelta(days=1)) > datetime.now()
+    return (submit_date + timedelta(days=1.5)) < datetime.now()
 
 def reschedule_hanged_tasks():
     should_remove = []
@@ -58,7 +58,7 @@ def reschedule_hanged_tasks():
 
     for run in should_remove:
         _, pathes = run_in_process.pop(run)
-        pathes[run] = pathes
+        runs[run] = pathes
 
 @app.post("/runs/finalize")
 async def add_run_to_completed(message: ClientMessage, credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
@@ -70,21 +70,33 @@ async def add_run_to_completed(message: ClientMessage, credentials: HTTPBasicCre
             runs[failed_files_run] = message.failed_files
             logger.warning(f'{message.run} reported files with wrong checksums! Resubmitted corrupted files')
         else:
-            run = message.run
             logger.warning(f'{message.run} reported files with wrong checksums but provided empty list of corrupt files! Need closer look')
 
+    try:
+        runs_in_process.pop(message.run)
+    except KeyError:
+        logger.warning(f'{message.run} reported after it was rescheduled! Checking the waiting queue for it.')
+        try:
+            _ = runs.pop(message.run)
+            logger.warning(f'{message.run} was removed from waiting queue.')
+        except KeyError:
+            logger.critical(f'{message.run} was not in waiting queue. Data corruption possible!')
+
     copied_runs.update({message.run: Status.Done})
-    runs_in_process.pop(message.run)
     logger.success(f'Finished copying {message.run}')
+    reschedule_hanged_tasks()
     
 
 @app.get("/runs/completed")
 async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
     return copied_runs
 
-@app.get("/runs/total")
+@app.get("/runs/remained/total")
 async def total_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
     return len(runs)
+
+@app.get("/files/copied/total")
+async def total_files_copied():
 
 @app.get("/runs/copied/total")
 async def total_copied_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
@@ -124,7 +136,7 @@ def parse_good_run_list(good_run_list, groupby_idx=7):
 def init():
     '''Init configuration'''
 
-    logger.add("server.log")
+    logger.add("warden_server.log")
     config = get_configuration()
     try:
         Auth.login =  config['credentials']['user']
