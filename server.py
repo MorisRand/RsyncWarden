@@ -101,11 +101,18 @@ async def total_copied_runs(credentials: HTTPBasicCredentials = Depends(Auth.get
 
 @app.get("/runs/next")
 async def send_next_run(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
-    entry = runs.popitem()
-    run, pathes = entry
-    start = datetime.now()
-    runs_in_process[run] = (start, pathes)
-    return {'run': run, 'files': pathes}
+    try:
+        entry = runs.popitem()
+        run, pathes = entry
+        start = datetime.now()
+        runs_in_process[run] = (start, pathes)
+        return {'run': run, 'files': pathes}
+    except KeyError:
+        raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail="All runs are processed!"
+                )
+
 
 
 def get_configuration() -> Dict[str, Optional[str]]:
