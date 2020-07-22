@@ -74,6 +74,7 @@ def event_loop(config):
 
     copying_in_progress, checking_cksums = False, False
     temp, rsync_process = None, None
+    
     while True:
         if not copying_in_progress:
             run, pathes, cksums = get_new_run(server, credentials)
@@ -98,13 +99,16 @@ def event_loop(config):
             # when rsync terminate, close temporary file
             if rsync_process.poll():
                 temp.close()
-                
-                
                 # compute and compare checksums:
+                wrong_checksums_files
+                for path in pathes
+
 
                 # report results to warden server
-
-            time.sleep(5)
+                
+                
+            else:
+                time.sleep(5)
 
 
 

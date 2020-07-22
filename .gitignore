@@ -143,5 +143,8 @@ __pycache__/
  cython_debug/
 
 
-#YAML config files
+# YAML config files
 *.yaml
+
+# Secrets
+ansible/secret

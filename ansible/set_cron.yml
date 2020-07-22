@@ -1,0 +1,19 @@
+---
+- hosts: 'rsync_ihep'
+  vars:
+      SECRET_DEST: /home/treskov/ansible_secret
+  tasks:
+      - name: Populate create secret files to read password for treskov from
+        copy:
+            src: secret
+            dest: "{{ SECRET_DEST }}" 
+            owner: treskov
+            mode: preserve
+      - name: Set cron job for initializing Kerberos tickets every night for treskov
+        cron:
+            name: Init Kerberos ticket
+            job: cat "{{ SECRET_DEST }}" | xargs kinit
+            hour: 1
+            minute: 0
+            user: treskov
+            state: present
