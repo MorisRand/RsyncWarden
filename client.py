@@ -144,7 +144,7 @@ if __name__ == "__main__":
     i = args.i
 
     if i:
-        logger.add('warden_client_{i}.log'.format(i), backtrace=True, diagnose=True, rotation='500 MB')
+        logger.add('warden_client_{}.log'.format(i), backtrace=True, diagnose=True, rotation='500 MB')
     else:
         logger.add('warden_client_{}.log'.format(os.getpid()), backtrace=True, diagnose=True,
                     rotation='500 MB')
