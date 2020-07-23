@@ -5,6 +5,7 @@ After=multi-user.target
 [Service]
 Type=simple
 User=treskov
+WorkingDirectory=/home/treskov/rsync_warden
 ExecStart=/home/treskov/rsync_warden/client.py -i %i
 Restart=on-failure
 TimeoutStartSec=3
