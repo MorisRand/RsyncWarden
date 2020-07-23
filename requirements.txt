@@ -1,0 +1,5 @@
+requests
+retrying
+fastapi
+pyyaml
+loguru

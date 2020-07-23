@@ -1,0 +1,35 @@
+---
+- hosts: 'rsync_ihep'
+  vars:
+      CLIENT_CONF: ../client_conf.yaml
+      SERVER_CONF: ../server_conf.yaml
+      GOOD_RUN: ../goodruns_n_checksums.P17B.txt
+      WARDER_DIR: /home/treskov/rsync_warden
+  tasks:
+      - name: Copy SSH credentials to hosts
+        copy:
+            src: '{{ item }}'
+            dest: '{{ item }}'
+            mode: preserve
+            owner: treskov
+        loop:
+            - "/home/treskov/.ssh/ansible"
+            - "/home/treskov/.ssh/ansible.pub"
+
+      - name: Get Warden from GitLab
+        git:
+            repo: 'git@git.jinr.ru:treskov/rsync_warden.git'
+            dest: '{{ WARDER_DIR }}'
+            accept_hostkey: yes
+            key_file: "/home/treskov/.ssh/ansible"
+
+      - name: Copy Warden conf and good run list
+        copy:
+            src: '{{ item }}'
+            dest: '{{ WARDER_DIR }}/'
+            mode: preserve
+            owner: treskov
+        loop:
+            - '{{ SERVER_CONF }}'
+            - '{{ CLIENT_CONF }}' 
+            - '{{ GOOD_RUN }}' 
