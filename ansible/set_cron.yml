@@ -12,7 +12,7 @@
       - name: Set cron job for initializing Kerberos tickets every night for treskov
         cron:
             name: Init Kerberos ticket
-            job: cat "{{ SECRET_DEST }}" | xargs kinit
+            job: cat "{{ SECRET_DEST }}" |  kinit
             hour: 1
             minute: 0
             user: treskov

@@ -17,6 +17,27 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from common.models import Status, ClientMessage
 
+config = None
+
+count_files = None
+try:
+    from XrootD import client
+    from XrootD.client.flags import DirListFlags
+
+    def count_xrootd():
+        myclient = client.FileSystem(config['EOS'])
+        _, listing = myclient.dirlist(config['EOS_DYBFS'],
+                                       DirListFlags.RECURSIVE)
+        return listing.size
+    count_files = count_xrootd
+except ImportError:
+    import subprocess
+    def count_fuse():
+        command = f'find {config["EOS_DYBFS"]} -print'
+        out = subprocess.check_output(command.split()).decode()
+        out.split('\n')
+        return len(out) - 1
+    count_files = count_fuse
 
 app = FastAPI()
 security = HTTPBasic()
@@ -87,6 +108,10 @@ async def add_run_to_completed(message: ClientMessage, credentials: HTTPBasicCre
     reschedule_hanged_tasks()
     
 
+@app.get("/files/completed")
+async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
+    return count_files()
+
 @app.get("/runs/completed")
 async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
     return copied_runs
@@ -143,7 +168,14 @@ def init():
     '''Init configuration'''
 
     logger.add("warden_server.log")
+    global config
     config = get_configuration()
+    try:
+        _ = (config['EOS'], config['EOS_DYBFS'])
+    except KeyError:
+        config['EOS'] = os.environ['EOS']
+        config['EOS_DYBFS'] = os.environ['EOS_DYBFS']
+
     try:
         Auth.login =  config['credentials']['user']
         Auth.passwd = config['credentials']['passwd']
