@@ -1,0 +1,35 @@
+---
+- hosts: 'rsync_server'
+  vars:
+      WARDER_DIR: /home/treskov/rsync_warden
+  tasks:
+      - name: Allow connections to warden server
+        ufw:
+          rule: allow
+          port: 8000 
+          proto: tcp
+          src: '{{ item }}'
+        loop:
+          - 159.93.221.82
+          - 159.93.221.83
+          - 159.93.221.52
+
+      - name: Copy rsync server conf to systemd
+        copy:
+            remote_src: yes
+            src: '{{ WARDER_DIR }}/systemd/warden_server.service'
+            dest: /etc/systemd/system/warden_server.service
+
+      - name: Activate warden service
+        systemd: 
+            name: warden_server
+            enabled: yes
+
+      - name: Force config reload
+        systemd: 
+            daemon_reload: yes
+
+      - name: Start warden server
+        systemd: 
+            name: warden_server
+            state: started
