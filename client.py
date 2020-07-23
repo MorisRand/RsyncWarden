@@ -144,10 +144,11 @@ if __name__ == "__main__":
     i = args.i
 
     if i:
-        logger.add('warden_client_{}.log'.format(i), backtrace=True, diagnose=True, rotation='500 MB')
+        logpath = os.path.join(os.getcwd(), 'warden_client_{}.log'.format(i))
     else:
-        logger.add('warden_client_{}.log'.format(os.getpid()), backtrace=True, diagnose=True,
-                    rotation='500 MB')
+        logpath = os.path.join(os.getcwd(), 'warden_client_{}.log'.format(os.getpid()))
+
+    logger.add(logpath, backtrace=True, diagnose=True, rotation='500 MB')
 
     config = get_config()
     event_loop(config)
