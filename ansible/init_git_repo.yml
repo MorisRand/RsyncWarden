@@ -22,6 +22,15 @@
             dest: '{{ WARDER_DIR }}'
             accept_hostkey: yes
             key_file: "/home/treskov/.ssh/ansible"
+        tags: git
+
+      - name: Change ownership of Warden to treskov 
+        file:
+            path: '{{ WARDER_DIR }}'
+            recurse: yes
+            state: directory
+            owner: treskov
+        tags: git
 
       - name: Copy Warden conf and good run list
         copy:

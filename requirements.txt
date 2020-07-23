@@ -3,3 +3,4 @@ retrying
 fastapi
 pyyaml
 loguru
+uvicorn
