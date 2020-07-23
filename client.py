@@ -14,12 +14,9 @@ from loguru import logger
 
 from common.models import ClientMessage, Status
 
-RSYNC_VERBOSE_COMMAND = '''rsync -h --progress -avzp --ignore-existing
-                           --files-from={filelist}  rsync://{ihep_host}:/dybfs {eos_home}'''
-RSYNC_SILENT_COMMAND = '''rsync -avzp --ignore-existing
-                            --files-from={filelist}  rsync://{ihep_host}:/dybfs {eos_home}'''
-RSYNC_REWRITE_COMMAND = '''rsync -h --progress -avzp 
-                            --files-from={filelist}  rsync://{ihep_host}:/dybfs {eos_home}'''
+RSYNC_VERBOSE_COMMAND = '''rsync -h --progress -avzp --ignore-existing --files-from={filelist}  rsync://{ihep_host}:/dybfs {eos_home}'''
+RSYNC_SILENT_COMMAND = '''rsync -avzp --ignore-existing --files-from={filelist}  rsync://{ihep_host}:/dybfs {eos_home}'''
+RSYNC_REWRITE_COMMAND = '''rsync -h --progress -avzp --files-from={filelist}  rsync://{ihep_host}:/dybfs {eos_home}'''
 
 def get_config():
     try:

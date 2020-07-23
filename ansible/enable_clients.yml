@@ -14,7 +14,8 @@
         copy:
             remote_src: yes
             src: '{{ WARDER_DIR }}/systemd/warden_client@.service'
-            dest: /etc/systemd/system/warden_client.service
+            dest: '/etc/systemd/system/warden_client@.service'
+
       - name: Force config reload
         systemd: 
             daemon_reload: yes
