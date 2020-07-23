@@ -1,0 +1,14 @@
+[Unit]
+Description = rsync warden client, %i instance
+After=multi-user.target
+
+[Service]
+Type=simple
+User=treskov
+ExecStart=/home/treskov/rsync_warden/client.py -i %i
+Restart=on-failure
+TimeoutStartSec=3
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

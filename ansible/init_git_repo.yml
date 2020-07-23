@@ -33,3 +33,8 @@
             - '{{ SERVER_CONF }}'
             - '{{ CLIENT_CONF }}' 
             - '{{ GOOD_RUN }}' 
+
+      - name: Install python deps
+        pip:
+            requirements: "{{ WARDER_DIR }}/requirements.txt"
+            executable: pip3
