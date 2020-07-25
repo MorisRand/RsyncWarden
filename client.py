@@ -33,7 +33,7 @@ def get_config():
     return config
 
 def compute_md5(path):
-    s = subprocess.check_output(f"md5sum {path}").decode()
+    s = subprocess.check_output(f"md5sum {path}".split()).decode()
     # subporcess returns "cksum path", need to extract cksum
     return s.split()[0]
 
