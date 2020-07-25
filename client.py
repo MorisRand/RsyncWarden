@@ -77,58 +77,54 @@ def event_loop(config):
     ihep_host = config['ihep_host']
     eos_home = config['eos_home']
 
-    copying_in_progress = False
     temp, rsync_process = None, None
     
     while True:
-        if not copying_in_progress:
-            run, pathes, cksums = get_new_run(server, credentials)
-            temp =  NamedTemporaryFile(mode='w+t')
-            logger.debug(f'Created temporaty file {temp.name} to fill with pathes to transfer in {run}')
-            
-            # prepare the file list for rsync process
-            for path in pathes:
-                temp.write(path+'\n')
-            # force writing to the disk
-            temp.seek(0)
+        run, pathes, cksums = get_new_run(server, credentials)
+        temp =  NamedTemporaryFile(mode='w+t')
+        logger.debug(f'Created temporaty file {temp.name} to fill with pathes to transfer in {run}')
+        
+        # prepare the file list for rsync process
+        for path in pathes:
+            temp.write(path+'\n')
+        # force writing to the disk
+        temp.seek(0)
 
-            filelist = temp.name
-            if "failed" in run:
-                rsync_command = RSYNC_REWRITE_COMMAND.format(**locals())
-            else:
-                rsync_command = RSYNC_SILENT_COMMAND.format(**locals())
-
-
-            logger.info(f'Starting new copy process for {run}')
-            logger.debug(f'Executing {rsync_command}')
-            rsync_process = subprocess.Popen(rsync_command.split())
-
-            copying_in_progress = True
+        filelist = temp.name
+        if "failed" in run:
+            rsync_command = RSYNC_REWRITE_COMMAND.format(**locals())
         else:
-            # when rsync terminate, close temporary file
-            if rsync_process.poll():
-                temp.close()
-                # compute and compare checksums:
-                wrong_checksums_files = []
-                for path, cksum in zip(pathes, cksums):
-                    path_in_eos = os.path.join(eos_home, path)
-                    if compute_md5(path_in_eos) != cksum:
-                        wrong_checksums_files.append((path, cksum))
+            rsync_command = RSYNC_VERBOSE_COMMAND.format(**locals())
 
-                n_wrong_files = len(wrong_checksums_files)
-                if n_wrong_files:
-                    logger.warning(f'{n_wrong_files} files with wrong checksums, sending to server for resubmit')
-                    msg = ClientMessage(run=run,
-                                        status=Status.IntegrityFailed,
-                                        failed_files=wrong_checksums_files)
-                else:
-                    logger.info(f'Zero files failed checksums')
-                    msg = ClientMessage(run=run, status=Status.Done)
 
-                finalize_run(server=server, credentials=credentials, message=message)
-                copying_in_progress = False
-            else:
-                time.sleep(5)
+        logger.info(f'Starting new copy process for {run}')
+        logger.debug(f'Executing {rsync_command}')
+        rsync_process = subprocess.Popen(rsync_command.split())
+
+        # WILL BLOCK EXECUTION TILL RSYNC ENDS 
+        logger.debug(f'Blocking till rsync finishes')
+        waiter = rsync_process.wait()
+        logger.debug(f'Rsync is done!')
+        # when rsync terminate, close temporary file
+        temp.close()
+        # compute and compare checksums:
+        wrong_checksums_files = []
+        for path, cksum in zip(pathes, cksums):
+            path_in_eos = os.path.join(eos_home, path)
+            if compute_md5(path_in_eos) != cksum:
+                wrong_checksums_files.append((path, cksum))
+
+        n_wrong_files = len(wrong_checksums_files)
+        if n_wrong_files:
+            logger.warning(f'{n_wrong_files} files with wrong checksums, sending to server for resubmit')
+            msg = ClientMessage(run=run,
+                                status=Status.IntegrityFailed,
+                                failed_files=wrong_checksums_files)
+        else:
+            logger.info(f'Zero files failed checksums')
+            msg = ClientMessage(run=run, status=Status.Done)
+
+        finalize_run(server=server, credentials=credentials, message=message)
 
 
 
