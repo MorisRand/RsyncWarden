@@ -4,39 +4,44 @@
 `server.py` contains an server-side functionality for:
 
 - Parsing good runs list;
-- Sending filelists for individual runs for clients
+- Sending filelists for individual runs for clients;
 - Validation that data transfer was handled correctly:
-   - Comparing file lists in JINR EOS and good run list
-   - Checking MD5 checksums for each file
+    - Resubmit failed file to be transfered
+- Provide stats for transfered files/runs
 
-## How to compute MD5 checksums on IHEP cluster:
-The guide to computing in IHEP cluster guide is [available](http://afsapply.ihep.ac.cn/cchelp/en/).
-Main gotchas:
-- If you use **public key** authentication to enter **lxslc7.ihep.ac.cn**:
-    - `kinit` -- authorize in IHEP Kerberos
-    - `aklog -d` -- authorize in IHEP AFS using Kerberos ticket
-- Your work area is in `/scratchfs/dyw/{user}`.
-- P17B data is in `/dybfs/rec/P17B`
-- Use `HepJob` to [submit tasks](http://afsapply.ihep.ac.cn/cchelp/en/local-cluster/jobs/HTCondor/)
-- One can get a list of unique runs in good run list with:
-```bash
-awk -F / '{for (i=6; i <= 8; i++) printf $i""FS; print""}' /dybfs/rec/P17B/GoodRun_v3/paths.physics.good.p17b.v3.sync.txt | uniq > good_runs_individual.tx
-```
-- One needs to prepare a number of executable scripts to run via HepJob.
-  Script `ihep_sub_for.py` will prepare a bunch of scripts for computing MD5
-  checksums for each run using `md5sum` command. It will create a `jobs/`
-  folder in `$PWD`.
-```bash
-python ihep_sub_for.py good_runs_individual.txt
-```
-- Submit tasks all at once with:
-```bash
-hep_sub jobs/job_%{ProcId}.sh -n N
-```
-> `N` should be equal to a number of tasks in `jobs`. Indexing **starts with
-> zero**
+## Client side
+`client.py` implements a client:
 
-- Find checksums missing after computing on IHEP cluster:
+ - Requests server for lists of files to copy;
+ - Runs rsyns over such filelists;
+ - After copying is done computes MD5 checksums and compare them with
+   checksums received from server
+   - If checksums comparison fails report it to server
+
+### Client-side settings to write to JINR EOS
+**NOTE**: In order to write to JINR EOS, you need to get a Kerberos ticket on a
+daily basis for **EACH** client node. You can achieve it by setting a cron
+job to that will `kinit` every day:
 ```bash
-python3 merge_checksums.py path/to/folder/with/checksums --good-runs paths.physics.good.p17b.v3.sync.txt --missing-files missing.txt
+cat secret_file_with_pass | kinit
 ```
+**Make sure that your secretfile is readable only by you by setting proper
+permissions!**
+
+Example for cron entry for user you will be running transfers from (launch job at 01:05 every day)
+```bash
+$ crontab -u user -l
+5 1 * * * cat "/path/to/secret_file_with_pass" |  kinit
+```
+
+### Systemd units
+Systemd units for controlling server and clients are stored in `systemd`
+folder.
+
+See `ansible` folders for helpers in setting up clients and server from Git
+repo.
+
+
+## IHEP cluster side
+See [this](ihep_cluster.md) on how to proceed with computing checksums on IHEP
+cluster
