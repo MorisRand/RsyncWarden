@@ -8,6 +8,7 @@ from collections import defaultdict
 import tempfile
 from queue import Queue
 from datetime import datetime, timedelta
+import signal
 
 from loguru import logger
 import yaml
@@ -139,7 +140,6 @@ async def send_next_run(credentials: HTTPBasicCredentials = Depends(Auth.get_cre
                 )
 
 
-
 def get_configuration() -> Dict[str, Optional[str]]:
     try:
         with open(os.path.abspath('server_conf.yaml'), 'r') as f:
@@ -167,8 +167,9 @@ def parse_good_run_list(good_run_list, groupby_idx=5):
 @app.on_event('startup')
 def init():
     '''Init configuration'''
-
     logger.add("warden_server.log")
+    set_gracefull_shutdown()
+
     global config
     config = get_configuration()
     try:
@@ -205,12 +206,22 @@ def init():
         global copied_runs
         for run, status in previously_copied_runs.items():
             if status == Status.Done:
-                runs.pop(run)
+                del runs[run]
+                logger.debug(f'Removing {run} from run list as it is copied')
             copied_runs[run] = status
 
-@app.on_event('shutdown')
 def dump_copied_runs():
     '''Save info about runs that were copied'''
     if copied_runs:
         with open('copied_runs.yaml', 'w') as f:
             yaml.dump(copied_runs, f)
+
+def gracefull_shutdown(signum=signal.SIGTERM, frame=None):
+    '''Shutdown at SIGTERM but dump copied runs'''
+    dump_copied_runs()
+    os._exit(0)
+
+def set_gracefull_shutdown():
+    signal.signal(signal.SIGTERM, gracefull_shutdown)
+
+dump_copied_runs = app.on_event('shutdown')(dump_copied_runs)
