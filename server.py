@@ -71,7 +71,7 @@ def task_overdue(submit_date):
 
 def reschedule_hanged_tasks():
     should_remove = []
-    for run, (submit_date, pathes) in run_in_process.items():
+    for run, (submit_date, pathes) in runs_in_process.items():
         if task_overdue(submit_date):
             should_remove.append(run)
 
@@ -79,7 +79,7 @@ def reschedule_hanged_tasks():
     logger.warning(f'{total_hanged} tasks are overdue by 2 days, taking them back to queue')
 
     for run in should_remove:
-        _, pathes = run_in_process.pop(run)
+        _, pathes = runs_in_process.pop(run)
         runs[run] = pathes
 
 @app.post("/runs/finalize")
