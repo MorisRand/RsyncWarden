@@ -1,3 +1,6 @@
+from collections import Counter
+from typing import Set
+
 class FailedFiles(Counter): 
     def __init__(self, *args, spurious_treshold=4, **kwargs): 
         self.spurious_files: Set[str] = set() 
