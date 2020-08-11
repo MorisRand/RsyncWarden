@@ -76,7 +76,8 @@ def reschedule_hanged_tasks():
             should_remove.append(run)
 
     total_hanged = len(should_remove)
-    logger.warning(f'{total_hanged} tasks are overdue by 2 days, taking them back to queue')
+    if total_hanged:
+        logger.warning(f'{total_hanged} tasks are overdue by 2 days, taking them back to queue')
 
     for run in should_remove:
         _, pathes = runs_in_process.pop(run)
