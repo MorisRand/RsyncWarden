@@ -124,7 +124,7 @@ def event_loop(config):
             logger.info(f'Zero files failed checksums')
             msg = ClientMessage(run=run, status=Status.Done)
 
-        finalize_run(server=server, credentials=credentials, message=message)
+        finalize_run(server=server, credentials=credentials, message=msg)
 
 
 
