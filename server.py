@@ -3,12 +3,11 @@
 import os
 import sys
 from os.path import abspath
-from typing import List, Dict, Tuple, Optional
-from collections import defaultdict
-import tempfile
-from queue import Queue
+from typing import List, Dict, Tuple, Optional, Set
+from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 import signal
+import subprocess
 
 from loguru import logger
 import yaml
@@ -17,28 +16,15 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from common.models import Status, ClientMessage
+from common.utils import FailedFiles
 
 config = None
 
-count_files = None
-try:
-    from XrootD import client
-    from XrootD.client.flags import DirListFlags
-
-    def count_xrootd():
-        myclient = client.FileSystem(config['EOS'])
-        _, listing = myclient.dirlist(config['EOS_DYBFS'],
-                                       DirListFlags.RECURSIVE)
-        return listing.size
-    count_files = count_xrootd
-except ImportError:
-    import subprocess
-    def count_fuse():
-        command = f'find {config["EOS_DYBFS"]} -print'
-        out = subprocess.check_output(command.split()).decode()
-        out.split('\n')
-        return len(out) - 1
-    count_files = count_fuse
+def count_files():
+    command = f'find {config["EOS_DYBFS"]} -print'
+    out = subprocess.check_output(command.split()).decode()
+    out = out.split('\n')
+    return len(out) - 1
 
 app = FastAPI()
 security = HTTPBasic()
@@ -48,7 +34,9 @@ copied_runs: Dict[str, Status] = dict()
 
 runs_in_process = dict()
 
-integrity_failed_counter = 0
+total_failed_files = FailedFiles()
+
+
 
 class Auth:
     login  = None 
@@ -86,12 +74,20 @@ def reschedule_hanged_tasks():
 @app.post("/runs/finalize")
 async def add_run_to_completed(message: ClientMessage, credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
     if message.status == Status.IntegrityFailed:
-        global integrity_failed_counter
-        failed_files_run = "failed_" + str(integrity_failed_counter)
-        integrity_failed_counter += 1
-        if message.failed_files is not None:
-            runs[failed_files_run] = message.failed_files
-            logger.warning(f'{message.run} reported files with wrong checksums! Resubmitted corrupted files')
+        failed_files_run = "failed_" + str(total_failed_files.integrity_failed_counter)
+        total_failed_files.integrity_failed_counter += 1
+        if message.failed_files:
+            failed_in_run = message.failed_files
+            total_failed_files.update(failed_in_run)
+            good_failed = [_ for _ in failed_in_run 
+                           if  _ not in total_failed_files.spurious_files] 
+            n_failed = len(good_failed)
+            if good_failed:
+                runs[failed_files_run] = good_failed
+                logger.warning(f'{message.run} reported {n_failed} new files with wrong checksums! Resubmitted new corrupted files')
+            else:
+                logger.critical(f'Some files with wrong checksums got reported '
+                        'more then 4 times, stopping resubmitting it. It needs closer look.')
         else:
             logger.warning(f'{message.run} reported files with wrong checksums but provided empty list of corrupt files! Need closer look')
 
@@ -105,7 +101,8 @@ async def add_run_to_completed(message: ClientMessage, credentials: HTTPBasicCre
         except KeyError:
             logger.critical(f'{message.run} was not in waiting queue. Data corruption possible!')
 
-    copied_runs.update({message.run: Status.Done})
+    if not "failed" in message.run:
+        copied_runs.update({message.run: Status.Done})
     logger.success(f'Finished copying {message.run}')
     reschedule_hanged_tasks()
     
@@ -113,6 +110,10 @@ async def add_run_to_completed(message: ClientMessage, credentials: HTTPBasicCre
 @app.get("/files/completed")
 async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
     return count_files()
+
+@app.get("/files/corrupted")
+async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
+    return total_failed_files.spurious_files
 
 @app.get("/runs/completed")
 async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
@@ -217,12 +218,20 @@ def dump_copied_runs():
         with open('copied_runs.yaml', 'w') as f:
             yaml.dump(copied_runs, f)
 
+def dump_spurious_files():
+    '''Save pathes of notorious files with likely wrong checksums'''
+    path = abspath('wrong_checksums_files.txt')
+    with open(path, 'w') as f:
+        for path in total_failed_files.spurious_files:
+            f.write(os.path.join('/dybfs', path)+"\n")
+    
 def gracefull_shutdown(signum=signal.SIGTERM, frame=None):
     '''Shutdown at SIGTERM but dump copied runs'''
     dump_copied_runs()
+    dump_spurious_files()
     os._exit(0)
 
 def set_gracefull_shutdown():
     signal.signal(signal.SIGTERM, gracefull_shutdown)
 
-dump_copied_runs = app.on_event('shutdown')(dump_copied_runs)
+dump_copied_runs = app.on_event('shutdown')(gracefull_shutdown)
