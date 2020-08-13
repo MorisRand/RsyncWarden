@@ -38,8 +38,19 @@ def compute_md5(path):
     # subporcess returns "cksum path", need to extract cksum
     return s.split()[0]
 
+def eos_is_up(eos_prefix):
+    try: 
+        gen = os.walk(eos_prefix)
+        # get /eos node
+        next(gen)
+        # will raise StopIteration if FUSE client is detached from eos_prefix
+        next(gen)
+        return True
+    except StopIteration as e:
+        logger.critical(f'EOS FUSE mount is not avaliable at {eos_prefix}!')
+        os.exit(1)
 
-@logger.catch()
+@logger.catch
 def get_new_run(server, credentials):
     @retry(wait_fixed=2000, stop_max_attempt_number=5)
     def _new():
@@ -78,9 +89,14 @@ def event_loop(config):
     ihep_host = config['ihep_host']
     eos_home = config['eos_home']
 
+
+    # path like /eos
+    eos_prefix = '/' + eos_home.split('/')[1]
+
     temp, rsync_process = None, None
     
     while True:
+        eos_is_up(eos_prefix)
         run, pathes, cksums = get_new_run(server, credentials)
         temp =  NamedTemporaryFile(mode='w+t')
         logger.debug(f'Created temporaty file {temp.name} to fill with pathes to transfer in {run}')
@@ -102,13 +118,14 @@ def event_loop(config):
         logger.debug(f'Executing {rsync_command}')
         rsync_process = subprocess.Popen(rsync_command.split())
 
-        # WILL BLOCK EXECUTION TILL RSYNC ENDS 
+        # WILL BLOCK EXECUTION UNTIL RSYNC ENDS 
         logger.debug(f'Blocking till rsync finishes')
         waiter = rsync_process.wait()
         logger.debug(f'Rsync is done!')
         # when rsync terminate, close temporary file
         temp.close()
         # compute and compare checksums:
+        logger.debug(f'Computing checksums')
         wrong_checksums_files = []
         for path, cksum in zip(pathes, cksums):
             path_in_eos = os.path.join(eos_home, path)

@@ -108,11 +108,11 @@ async def add_run_to_completed(message: ClientMessage, credentials: HTTPBasicCre
     
 
 @app.get("/files/completed")
-async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
+async def completed_files(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
     return count_files()
 
 @app.get("/files/corrupted")
-async def completed_runs(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
+async def files_corrupted(credentials: HTTPBasicCredentials = Depends(Auth.get_credentials)):
     return total_failed_files.spurious_files
 
 @app.get("/runs/completed")
@@ -153,7 +153,7 @@ def get_configuration() -> Dict[str, Optional[str]]:
 
 
 def parse_good_run_list(good_run_list, groupby_idx=5):
-    good_runs: Dict[str: List[Tuple[str,str]]] = defaultdict(list)
+    good_runs: defaultdict[str: List[Tuple[str,str]]] = defaultdict(list)
     with open(good_run_list, 'r') as f:
         run_in_process = None
         for entry in f:

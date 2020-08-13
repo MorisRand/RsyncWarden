@@ -8,8 +8,11 @@ User=treskov
 WorkingDirectory=/home/treskov/rsync_warden
 ExecStart=/home/treskov/rsync_warden/client.py -i %i
 Restart=on-failure
-TimeoutStartSec=3
-RestartSec=10
+TimeoutStartSec=3 # time to wait for startup
+RestartSec=10 # if failed restart after 10 seconds
+
+StartLimitIntervalSec=120 # set time range to account for retries
+StartLimitBurst=5 # if more restart then 5 in 100 seconds, stop trying and go to failed state
 
 [Install]
 WantedBy=multi-user.target
