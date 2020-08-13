@@ -6,7 +6,7 @@
           - "warden_client@1.service"
           - "warden_client@2.service"
   tasks:
-      - name: Copy rsync server conf to systemd
+      - name: Copy rsync client conf to systemd
         copy:
             remote_src: yes
             src: '{{ WARDER_DIR }}/systemd/warden_client@.service'
@@ -15,7 +15,7 @@
       - name: Enable clients if neccessary
         systemd:
             name: "{{ item }}"
-            status: enabled
+            enabled: yes
         loop: "{{ WARDER_CLIENTS }}"
 
       - name: Stop clients if running
