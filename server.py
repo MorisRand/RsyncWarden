@@ -229,9 +229,9 @@ def gracefull_shutdown(signum=signal.SIGTERM, frame=None):
     '''Shutdown at SIGTERM but dump copied runs'''
     dump_copied_runs()
     dump_spurious_files()
-    os._exit(0)
+    sys.exit(0)
 
 def set_gracefull_shutdown():
     signal.signal(signal.SIGTERM, gracefull_shutdown)
 
-dump_copied_runs = app.on_event('shutdown')(gracefull_shutdown)
+exit_handler = app.on_event('shutdown')(gracefull_shutdown)
