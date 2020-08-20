@@ -7,7 +7,7 @@ Wants=network-online.target,remote-fs.target,multi-user.target
 Type=oneshot
 RemainAfterExit=true
 Environment=EOS_MGM_URL=root://eos.jinr.ru
-ExecStart=/bin/mount -t fuse eosxd /eos
+ExecStart=/usr/bin/eosxd /eos
 ExecStop=/bin/umount -R /eos
 Assert=ConditionPathIsDirectory=/eos
 
