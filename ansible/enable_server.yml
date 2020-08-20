@@ -20,14 +20,19 @@
             src: '{{ WARDER_DIR }}/systemd/warden_server.service'
             dest: /etc/systemd/system/warden_server.service
 
-      - name: Activate warden service
+      - name: Start warden server
         systemd: 
             name: warden_server
-            enabled: yes
+            state: stopped
 
       - name: Force config reload
         systemd: 
             daemon_reload: yes
+
+      - name: Activate warden service
+        systemd: 
+            name: warden_server
+            enabled: yes
 
       - name: Start warden server
         systemd: 
