@@ -1,6 +1,6 @@
 [Unit]
 Description = rsync warden server 
-After=multi-user.target
+After=multi-user.target,eosxd.target
 
 [Service]
 Type=simple
@@ -15,4 +15,3 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-

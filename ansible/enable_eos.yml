@@ -1,0 +1,32 @@
+---
+- hosts: 'rsync_ihep'
+  vars:
+      WARDER_DIR: /home/treskov/rsync_warden
+  tasks:
+      - name: Copy eos client conf to systemd
+        copy:
+            remote_src: yes
+            src: '{{ WARDER_DIR }}/systemd/eosxd.service'
+            dest: '/etc/systemd/system/eosxd.service'
+
+      - name: Force config reload
+        systemd: 
+            daemon_reload: yes
+
+      - name: Enable clients if neccessary
+        systemd:
+            name: eosxd.service
+            enabled: yes
+
+      - name: Stop clients if running
+        systemd:
+            name: eosxd.service
+            state: stopped
+        tags: ['stop']
+
+
+      - name: Start clients
+        systemd:
+            name: eosxd.service
+            state: started
+        tags: ['start']

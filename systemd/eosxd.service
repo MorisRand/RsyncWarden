@@ -1,0 +1,15 @@
+[Unit]
+Description=eosxd mount for JINR EOS
+After=network-online.target,remote-fs.target,multi-user.target
+Wants=network-online.target,remote-fs.target,multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+Environment=EOS_MGM_URL=root://eos.jinr.ru
+ExecStart=/bin/mount -t fuse eosxd /eos
+ExecStop=/bin/umount -R /eos
+Assert=ConditionPathIsDirectory=/eos
+
+[Install]
+WantedBy=multi-user.target

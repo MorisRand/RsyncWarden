@@ -1,6 +1,6 @@
 [Unit]
 Description = rsync warden client, %i instance
-After=multi-user.target
+After=multi-user.target,eosxd.target
 
 [Service]
 Type=simple
@@ -12,7 +12,7 @@ TimeoutStartSec=3 # time to wait for startup
 RestartSec=10 # if failed restart after 10 seconds
 
 StartLimitIntervalSec=120 # set time range to account for retries
-StartLimitBurst=5 # if more restart then 5 in 100 seconds, stop trying and go to failed state
+StartLimitBurst=5 # if more restart then 5 in 120 seconds, stop trying and go to failed state
 
 [Install]
 WantedBy=multi-user.target
