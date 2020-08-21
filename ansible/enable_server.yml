@@ -24,6 +24,7 @@
         systemd: 
             name: warden_server
             state: stopped
+        tags: ['stop']
 
       - name: Force config reload
         systemd: 
@@ -37,4 +38,5 @@
       - name: Start warden server
         systemd: 
             name: warden_server
+            daemon_reload: yes
             state: started

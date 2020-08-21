@@ -33,5 +33,6 @@
         systemd:
             name: "{{ item }}"
             state: started
+            daemon_reload: yes
         loop: "{{ WARDER_CLIENTS }}"
         tags: ['start']
