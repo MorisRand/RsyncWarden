@@ -17,6 +17,7 @@
         systemd:
             name: eosxd.service
             enabled: yes
+            daemon_reload: yes
 
       - name: Stop clients if running
         systemd:
@@ -29,4 +30,5 @@
         systemd:
             name: eosxd.service
             state: started
+            daemon_reload: yes
         tags: ['start']

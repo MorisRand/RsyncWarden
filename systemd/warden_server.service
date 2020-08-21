@@ -1,6 +1,6 @@
 [Unit]
 Description = rsync warden server 
-After=multi-user.target,eosxd.target
+After=multi-user.target,eosxd.service
 
 [Service]
 Type=simple
