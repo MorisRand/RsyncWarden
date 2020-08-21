@@ -20,7 +20,7 @@
             src: '{{ WARDER_DIR }}/systemd/warden_server.service'
             dest: /etc/systemd/system/warden_server.service
 
-      - name: Start warden server
+      - name: Stop warden server
         systemd: 
             name: warden_server
             state: stopped
