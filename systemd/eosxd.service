@@ -2,6 +2,7 @@
 Description=eosxd mount for JINR EOS
 After=network-online.target,remote-fs.target,multi-user.target
 Wants=network-online.target,remote-fs.target,multi-user.target
+AssertPathIsDirectory=/eos
 
 [Service]
 Type=oneshot
@@ -9,7 +10,6 @@ RemainAfterExit=true
 Environment=EOS_MGM_URL=root://eos.jinr.ru
 ExecStart=/usr/bin/eosxd /eos
 ExecStop=/bin/umount -R /eos
-Assert=ConditionPathIsDirectory=/eos
 
 [Install]
 WantedBy=multi-user.target
