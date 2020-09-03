@@ -45,6 +45,8 @@ def main(args):
         try:
             cksum_in_eos = _get_cksum(join(root_folder, fname))
         except:
+            # really naive handling, many things can cause problems: network,
+            # authentication, storage inaccesibility...
             print(f'{fname} is not in storage! Adding it to wrong file list')
             wrong_cksum_files.append(fname)
             continue
