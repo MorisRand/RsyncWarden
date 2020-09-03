@@ -2,11 +2,6 @@ from __future__ import print_function
 import os
 import argparse
 
-try:
-    import htcondor
-except ImportError:
-    print("No condor")
-
 DYB_LUSTRE_P17B = "/dybfs/rec/P17B/rec/"
 #  condor_jobs = []
 #  condor_payload = htcondor.Submit({

@@ -13,7 +13,7 @@ def merge_checksums(args):
     for  csum_file in glob.glob(args.checksums+'/checksums*'):
         with open(csum_file, 'r') as f:
             for line in f:
-                cksum, _, path = line.split(' ')
+                cksum, path = line.split(' ')
                 checksums_pathes.add(path)
                 checksums_full.add((path, cksum))
 
