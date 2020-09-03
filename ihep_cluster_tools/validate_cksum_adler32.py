@@ -43,7 +43,7 @@ def main(args):
     wrong_cksum_files = []
     for fname, orig_cksum in expected:
         try:
-            cksum_in_eos = _get_cksum(join(root_folder, fname))
+            cksum_in_eos = _get_cksum(fname)
         except:
             # really naive handling, many things can cause problems: network,
             # authentication, storage inaccesibility...
