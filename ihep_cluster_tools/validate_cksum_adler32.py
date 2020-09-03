@@ -1,8 +1,15 @@
 #!/usr/bin/python3
 
 import os
+import sys
 from os.path import join, abspath
 import argparse
+
+try:
+    from tqdm import tqdm
+except ImportError:
+    print('No fancy progress bar support; install tqdm for it')
+    tqdm = lambda x: x
 
 try:
     import XRootD.client as xrdcl
@@ -16,10 +23,11 @@ class InputReader:
             self.entries = []
             for line in f:
                 filename, cksum = line.rstrip("\n").split(" ")
-                self.entries.append((filename, path))
+                self.entries.append((filename, cksum))
 
     def __iter__(self):
-        return iter(self.entries)
+        return iter(tqdm(self.entries))
+
                 
 def main(args):
     def _get_cksum(path):
@@ -34,18 +42,22 @@ def main(args):
 
     wrong_cksum_files = []
     for fname, orig_cksum in expected:
-        cksum_in_eos = _get_cksum(join(root_folder, fname))
+        try:
+            cksum_in_eos = _get_cksum(join(root_folder, fname))
+        except:
+            print(f'{fname} is not in storage! Adding it to wrong file list')
+            wrong_cksum_files.append(fname)
+            continue
         if cksum_in_eos != orig_cksum:
             print(f'Wrong cksum for {fname}: {cksum_in_eos} != {orig_cksum}')
             wrong_cksum_files.append(fname)
 
     if wrong_cksum_files:
         print(f'''{len(wrong_cksum_files)} files have wrong cksums, list of
-        it is saved to {output_file} ''')
-
-    with open(output_file, 'w') as f:
-        for fname in wrong_cksum_files:
-            f.write(fname+'\n')
+        it is saved to {output_file}''')
+        with open(output_file, 'w') as f:
+            for fname in wrong_cksum_files:
+                f.write(fname+'\n')
 
 
 if __name__ == "__main__":
