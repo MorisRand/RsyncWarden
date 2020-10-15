@@ -10,6 +10,7 @@ import argparse
 def merge_checksums(args):
     checksums_pathes = set()
     checksums_full = set()
+    old, new = args.substitute_path
     for  csum_file in glob.glob(args.checksums+'/checksums*'):
         with open(csum_file, 'r') as f:
             for line in f:
@@ -34,6 +35,10 @@ def merge_checksums(args):
                 if path in goodruns:
                     cksum = cksum.rstrip('\n')
                     path = path.rstrip('\n')
+                    # P19A files in EOS are in dybfs2 folder but in IHEP they
+                    # are in dybfs lustre partion so we swap it for correct
+                    # mapping to our setup
+                    path = path.replace(old, new) 
                     f.write(f'{path} {cksum}\n')
 
 
@@ -47,6 +52,8 @@ if __name__ == "__main__":
             help='Path where missing files list will be created')
     parser.add_argument('--goodrun-checksums', type=abspath,
             help='Path to file where checksums and pathes for goodrun list will be stored')
+    parser.add_argument('--substitute-path', nargs=2, type=abspath, metavar="(OLD_VAL NEW_VAL)",
+            help='Subsititute part of file path with new value')
     
     args = parser.parse_args()
     merge_checksums(args)
