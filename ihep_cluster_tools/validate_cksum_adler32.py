@@ -31,7 +31,7 @@ class InputReader:
                 
 def main(args):
     def _get_cksum(path):
-        _, response = eos_fs.query(xrdcksum, join(root_folder, path))
+        _, response = eos_fs.query(xrdcksum, path)
         _, cksum = response.decode("utf-8").rstrip('\x00').split()
         return cksum
 
@@ -43,13 +43,14 @@ def main(args):
     wrong_cksum_files = []
     for fname, orig_cksum in expected:
         try:
-            cksum_in_eos = _get_cksum(fname)
+            if fname.startswith('/'):
+                fname = fname.lstrip('/')
+            cksum_in_eos = _get_cksum(join(root_folder, fname))
         except:
             # really naive handling, many things can cause problems: network,
             # authentication, storage inaccesibility...
             print(f'{fname} is not in storage! Adding it to wrong file list')
             wrong_cksum_files.append(fname)
-            continue
         if cksum_in_eos != orig_cksum:
             print(f'Wrong cksum for {fname}: {cksum_in_eos} != {orig_cksum}')
             wrong_cksum_files.append(fname)
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--input-file", required=True, type=InputReader, help="Help text")
     parser.add_argument("-e", "--eos", default="root://eos.jinr.ru", 
                         help='EOS storage address')
-    parser.add_argument("-d", "--data-root", default="/eos/juno/dirac/juno/lustre-ro/dybfs",
+    parser.add_argument("-d", "--data-root", default="/eos/juno/dirac/juno/lustre-ro",
                         help="Root directory for data in EOS")
     parser.add_argument("-o", "--output", type=abspath, help="Path where to store files with wrong checksums")
 
