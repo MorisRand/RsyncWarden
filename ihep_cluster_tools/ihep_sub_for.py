@@ -14,7 +14,7 @@ class CondorSubmitter:
         self.chunks = chunks
         self.output_base = output_base
 
-    def submit_htcondor_jobs(run_file):
+    def submit_htcondor_jobs(self, run_file):
         output_path = os.getcwd()+"/condor"
         if not os.path.exists(output_path):
             os.mkdir(output_path)
@@ -35,7 +35,7 @@ class CondorSubmitter:
                 print("Creating next chunk: {}".format(len(chunks)))
                 try:
                     for _ in range(self.chunks):
-                        chunks[-1].append(it.next())
+                        chunks[-1].append(next(it))
                 except StopIteration:
                     print("Prepared chunks")
                     break
@@ -54,14 +54,14 @@ class CondorSubmitter:
                     for path in pathes:
                         path = path.rstrip('\n')
                         j.write(script_body.format(path, output))
-                os.chmod(job, 0755)
+                os.chmod(job, 0o755)
 
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('input_file', type=os.path.abspath,
         help='Path to file with run unique run number ids')
-    parser.add_argument("-cs", "--chunk-size", default=50, help="Number of files per job")
+    parser.add_argument("-cs", "--chunk-size", type=int, default=50, help="Number of files per job")
     parser.add_argument("-o", "--output-base", required=True, help="Basename for naming output files")
     args = parser.parse_args()
 
