@@ -33,8 +33,8 @@ def get_config():
         config['ihep_host'] = os.environ['IHEP_HOST']
     return config
 
-def compute_md5(path):
-    s = subprocess.check_output(f"md5sum {path}".split()).decode()
+def compute_adler(path):
+    s = subprocess.check_output(f"xrdadler32 {path}".split()).decode()
     # subporcess returns "cksum path", need to extract cksum
     return s.split()[0]
 
@@ -129,7 +129,7 @@ def event_loop(config):
         wrong_checksums_files = []
         for path, cksum in zip(pathes, cksums):
             path_in_eos = os.path.join(eos_home, path)
-            if compute_md5(path_in_eos) != cksum:
+            if compute_adler(path_in_eos) != cksum:
                 wrong_checksums_files.append((path, cksum))
 
         n_wrong_files = len(wrong_checksums_files)
